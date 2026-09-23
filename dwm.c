@@ -1536,15 +1536,27 @@ setfullscreen(Client *c, int fullscreen)
 void
 setlayout(const Arg *arg)
 {
-	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
-		selmon->sellt ^= 1;
-	if (arg && arg->v)
-		selmon->lt[selmon->sellt] = (Layout *)arg->v;
-	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
-	if (selmon->sel)
-		arrange(selmon);
-	else
-		drawbar(selmon);
+    if (!arg || !arg->v) {
+        /* no arg: cycle forward through layouts[] */
+        Layout *l;
+        for (l = (Layout *)layouts; l != selmon->lt[selmon->sellt]; l++);
+        if ((l + 1)->symbol)
+            selmon->lt[selmon->sellt] = (l + 1);
+        else
+            selmon->lt[selmon->sellt] = layouts; /* wrap back */
+    } else {
+        /* with arg: set specific layout */
+        selmon->lt[selmon->sellt] = (Layout *)arg->v;
+    }
+
+    strncpy(selmon->ltsymbol,
+            selmon->lt[selmon->sellt]->symbol,
+            sizeof selmon->ltsymbol);
+
+    if (selmon->sel)
+        arrange(selmon);
+    else
+        drawbar(selmon);
 }
 
 /* arg > 1.0 will set mfact absolutely */
