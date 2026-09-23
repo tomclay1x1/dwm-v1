@@ -178,10 +178,10 @@ static long getstate(Window w);
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, int focused);
 static void grabkeys(void);
+static void horizgrid(Monitor *m);
 static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
-static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
@@ -203,16 +203,6 @@ static void sendmon(Client *c, Monitor *m);
 static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
-static void setgaps(int oh, int ov, int ih, int iv);
-static void incrgaps(const Arg *arg);
-static void incrigaps(const Arg *arg);
-static void incrogaps(const Arg *arg);
-static void incrohgaps(const Arg *arg);
-static void incrovgaps(const Arg *arg);
-static void incrihgaps(const Arg *arg);
-static void incrivgaps(const Arg *arg);
-static void togglegaps(const Arg *arg);
-static void defaultgaps(const Arg *arg);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
 static void setup(void);
@@ -1513,110 +1503,7 @@ setfocus(Client *c)
 		PropModeReplace, (unsigned char *)&c->win, 1);
 	sendevent(c, wmatom[WMTakeFocus]);
 }
-void
-setgaps(int oh, int ov, int ih, int iv)
-{
-	if (oh < 0) oh = 0;
-	if (ov < 0) ov = 0;
-	if (ih < 0) ih = 0;
-	if (iv < 0) iv = 0;
 
-	selmon->gappoh = oh;
-	selmon->gappov = ov;
-	selmon->gappih = ih;
-	selmon->gappiv = iv;
-	arrange(selmon);
-}
-
-void
-togglegaps(const Arg *arg)
-{
-	enablegaps = !enablegaps;
-	arrange(selmon);
-}
-
-void
-defaultgaps(const Arg *arg)
-{
-	setgaps(gappoh, gappov, gappih, gappiv);
-}
-
-void
-incrgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh + arg->i,
-		selmon->gappov + arg->i,
-		selmon->gappih + arg->i,
-		selmon->gappiv + arg->i
-	);
-}
-
-void
-incrigaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov,
-		selmon->gappih + arg->i,
-		selmon->gappiv + arg->i
-	);
-}
-
-void
-incrogaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh + arg->i,
-		selmon->gappov + arg->i,
-		selmon->gappih,
-		selmon->gappiv
-	);
-}
-
-void
-incrohgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh + arg->i,
-		selmon->gappov,
-		selmon->gappih,
-		selmon->gappiv
-	);
-}
-
-void
-incrovgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov + arg->i,
-		selmon->gappih,
-		selmon->gappiv
-	);
-}
-
-void
-incrihgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov,
-		selmon->gappih + arg->i,
-		selmon->gappiv
-	);
-}
-
-void
-incrivgaps(const Arg *arg)
-{
-	setgaps(
-		selmon->gappoh,
-		selmon->gappov,
-		selmon->gappih,
-		selmon->gappiv + arg->i
-	);
-}
 void
 setfullscreen(Client *c, int fullscreen)
 {
@@ -1859,63 +1746,57 @@ tile(Monitor *m)
 
 void
 horizgrid(Monitor *m) {
-	Client *c;
-	unsigned int n, i;
-	int oh, ov, ih, iv;
-	int mx = 0, my = 0, mh = 0, mw = 0;
-	int sx = 0, sy = 0, sh = 0, sw = 0;
-	int ntop, nbottom = 1;
-	float mfacts = 0, sfacts = 0;
-	int mrest, srest, mtotal = 0, stotal = 0;
+    Client *c;
+    unsigned int n, i;
+    int mx = 0, my = 0, mh = 0, mw = 0;
+    int sx = 0, sy = 0, sh = 0, sw = 0;
+    int ntop, nbottom = 1;
+    int mrest, srest;
 
-	/* Count windows */
-	getgaps(m, &oh, &ov, &ih, &iv, &n);
-	if (n == 0)
-		return;
+    /* Count windows */
+    for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
+    if (n == 0)
+        return;
 
-	if (n <= 2)
-		ntop = n;
-	else {
-		ntop = n / 2;
-		nbottom = n - ntop;
-	}
-	sx = mx = m->wx + ov;
-	sy = my = m->wy + oh;
-	sh = mh = m->wh - 2*oh;
-	sw = mw = m->ww - 2*ov;
+    if (n <= 2)
+        ntop = n;
+    else {
+        ntop = n / 2;
+        nbottom = n - ntop;
+    }
 
-	if (n > ntop) {
-		sh = (mh - ih) / 2;
-		mh = mh - ih - sh;
-		sy = my + mh + ih;
-		mw = m->ww - 2*ov - iv * (ntop - 1);
-		sw = m->ww - 2*ov - iv * (nbottom - 1);
-	}
+    /* Use static gaps directly */
+    int oh = m->gappoh;
+    int ov = m->gappov;
+    int ih = m->gappih;
+    int iv = m->gappiv;
 
-	/* calculate facts */
-	for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
-		if (i < ntop)
-			mfacts += c->cfact;
-		else
-			sfacts += c->cfact;
+    sx = mx = m->wx + ov;
+    sy = my = m->wy + oh;
+    sh = mh = m->wh - 2*oh;
+    
+    mw = m->ww - 2*ov - iv * (ntop - 1);
+    sw = m->ww - 2*ov - iv * (nbottom - 1);
 
-	for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
-		if (i < ntop)
-			mtotal += mh * (c->cfact / mfacts);
-		else
-			stotal += sw * (c->cfact / sfacts);
+    if (n > ntop) {
+        sh = (mh - ih) / 2;
+        mh = mh - ih - sh;
+        sy = my + mh + ih;
+    }
 
-	mrest = mh - mtotal;
-	srest = sw - stotal;
+    mrest = mw % ntop;
+    srest = sw % nbottom;
 
-	for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
-		if (i < ntop) {
-			resize(c, mx, my, mw * (c->cfact / mfacts) + (i < mrest ? 1 : 0) - (2*c->bw), mh - (2*c->bw), 0);
-			mx += WIDTH(c) + iv;
-		} else {
-			resize(c, sx, sy, sw * (c->cfact / sfacts) + ((i - ntop) < srest ? 1 : 0) - (2*c->bw), sh - (2*c->bw), 0);
-			sx += WIDTH(c) + iv;
-		}
+    /* Draw windows */
+    for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
+        if (i < ntop) {
+            resize(c, mx, my, (mw / ntop) + (i < mrest ? 1 : 0) - (2*c->bw), mh - (2*c->bw), 0);
+            mx += WIDTH(c) + iv;
+        } else {
+            resize(c, sx, sy, (sw / nbottom) + ((i - ntop) < srest ? 1 : 0) - (2*c->bw), sh - (2*c->bw), 0);
+            sx += WIDTH(c) + iv;
+        }
+    }
 }
 
 void
