@@ -152,6 +152,7 @@ static void arrangemon(Monitor *m);
 static void attach(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
+static void bstackhoriz(Monitor *m);
 static void checkotherwm(void);
 static void cleanup(void);
 static void cleanupmon(Monitor *mon);
@@ -1795,6 +1796,58 @@ horizgrid(Monitor *m) {
         } else {
             resize(c, sx, sy, (sw / nbottom) + ((i - ntop) < srest ? 1 : 0) - (2*c->bw), sh - (2*c->bw), 0);
             sx += WIDTH(c) + iv;
+        }
+    }
+}
+
+void
+bstackhoriz(Monitor *m)
+{
+    unsigned int i, n;
+    int mx = 0, my = 0, mh = 0, mw = 0;
+    int sx = 0, sy = 0, sh = 0, sw = 0;
+    int mrest = 0, srest = 0;
+    Client *c;
+
+    /* Count windows */
+    for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
+    if (n == 0)
+        return;
+
+    /* Use static gaps directly */
+    int oh = m->gappoh;
+    int ov = m->gappov;
+    int ih = m->gappih;
+    int iv = m->gappiv;
+
+    sx = mx = m->wx + ov;
+    sy = my = m->wy + oh;
+    mh = m->wh - 2*oh;
+    sh = m->wh - 2*oh - ih * (n - m->nmaster - 1);
+    mw = m->ww - 2*ov - iv * (MIN(n, m->nmaster) - 1);
+    sw = m->ww - 2*ov;
+
+    if (m->nmaster && n > m->nmaster) {
+        sh = (mh - ih) * (1 - m->mfact);
+        mh = mh - ih - sh;
+        sy = my + mh + ih;
+        sh = m->wh - mh - 2*oh - ih * (n - m->nmaster);
+    }
+
+    /* Calculate remainders for pixel-perfect rendering */
+    if (m->nmaster)
+        mrest = mw % MIN(n, m->nmaster);
+    if (n > m->nmaster)
+        srest = sh % (n - m->nmaster);
+
+    /* Draw windows */
+    for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
+        if (i < m->nmaster) {
+            resize(c, mx, my, (mw / MIN(n, m->nmaster)) + (i < mrest ? 1 : 0) - (2*c->bw), mh - (2*c->bw), 0);
+            mx += WIDTH(c) + iv;
+        } else {
+            resize(c, sx, sy, sw - (2*c->bw), (sh / (n - m->nmaster)) + ((i - m->nmaster) < srest ? 1 : 0) - (2*c->bw), 0);
+            sy += HEIGHT(c) + ih;
         }
     }
 }
