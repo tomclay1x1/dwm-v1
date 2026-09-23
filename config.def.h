@@ -54,8 +54,7 @@ static const Layout layouts[] = {
 	{ "[]=",      tile },    /* first entry is default */
 	{ "---",      horizgrid },
 	{ "===",      bstackhoriz },
-	{ "[M]",      monocle },
-	{ "><>",      NULL },    /* no layout function means floating behavior */
+	{ "><>",      NULL }    /* no layout function means floating behavior */
 };
 
 /* key definitions */
