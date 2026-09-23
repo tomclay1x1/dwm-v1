@@ -434,43 +434,51 @@ attachstack(Client *c)
 void
 buttonpress(XEvent *e)
 {
-	unsigned int i, x, click;
-	Arg arg = {0};
-	Client *c;
-	Monitor *m;
-	XButtonPressedEvent *ev = &e->xbutton;
+    unsigned int i, x, click;
+    Arg arg = {0};
+    Client *c;
+    Monitor *m;
+    XButtonPressedEvent *ev = &e->xbutton;
 
-	click = ClkRootWin;
-	/* focus monitor if necessary */
-	if ((m = wintomon(ev->window)) && m != selmon) {
-		unfocus(selmon->sel, 1);
-		selmon = m;
-		focus(NULL);
-	}
-	if (ev->window == selmon->barwin) {
-		i = x = 0;
-		do
-			x += TEXTW(tags[i]);
-		while (ev->x >= x && ++i < LENGTH(tags));
-		if (i < LENGTH(tags)) {
-			click = ClkTagBar;
-			arg.ui = 1 << i;
-		} else if (ev->x < x + TEXTW(selmon->ltsymbol))
-			click = ClkLtSymbol;
-		else if (ev->x > selmon->ww - (int)TEXTW(stext) + lrpad - 2)
-			click = ClkStatusText;
-		else
-			click = ClkWinTitle;
-	} else if ((c = wintoclient(ev->window))) {
-		focus(c);
-		restack(selmon);
-		XAllowEvents(dpy, ReplayPointer, CurrentTime);
-		click = ClkClientWin;
-	}
-	for (i = 0; i < LENGTH(buttons); i++)
-		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
-		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+    click = ClkRootWin;
+    /* focus monitor if necessary */
+    if ((m = wintomon(ev->window)) && m != selmon) {
+        unfocus(selmon->sel, 1);
+        selmon = m;
+        focus(NULL);
+    }
+    if (ev->window == selmon->barwin) {
+        /* --- ARCH ICON OFFSET ADDED HERE --- */
+        int archw = TEXTW(" ");
+        if (ev->x < archw)
+            return; 
+        
+        i = 0;
+        x = archw; 
+        /* ----------------------------------- */
+        
+        do
+            x += TEXTW(tags[i]);
+        while (ev->x >= x && ++i < LENGTH(tags));
+        if (i < LENGTH(tags)) {
+            click = ClkTagBar;
+            arg.ui = 1 << i;
+        } else if (ev->x < x + TEXTW(selmon->ltsymbol))
+            click = ClkLtSymbol;
+        else if (ev->x > selmon->ww - (int)TEXTW(stext) + lrpad - 2)
+            click = ClkStatusText;
+        else
+            click = ClkWinTitle;
+    } else if ((c = wintoclient(ev->window))) {
+        focus(c);
+        restack(selmon);
+        XAllowEvents(dpy, ReplayPointer, CurrentTime);
+        click = ClkClientWin;
+    }
+    for (i = 0; i < LENGTH(buttons); i++)
+        if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
+        && CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
+            buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
 }
 
 void
@@ -730,7 +738,7 @@ drawbar(Monitor *m)
     /* draw status first so it can be overdrawn by tags later */
     if (m == selmon) { /* status is only drawn on selected monitor */
         drw_setscheme(drw, scheme[SchemeNorm]);
-        tw = TEXTW(stext);
+        tw = TEXTW(stext); 
         drw_text(drw, m->ww - tw - 2 * sp, 0, tw, bh, lrpad / 2, stext, 0); /* Patched */
     }
 
@@ -739,7 +747,13 @@ drawbar(Monitor *m)
         if (c->isurgent)
             urg |= c->tags;
     }
-    x = 0;
+
+    /* --- Arch Icon --- */
+    int archw = TEXTW(" "); 
+    drw_setscheme(drw, scheme[SchemeNorm]);
+    x = drw_text(drw, 0, 0, archw, bh, lrpad / 2, " ", 0);
+    /* ---------------------------- */
+
     for (i = 0; i < LENGTH(tags); i++) {
         w = TEXTW(tags[i]);
         drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
