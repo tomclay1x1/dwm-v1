@@ -11,43 +11,6 @@
 #include "util.h"
 
 
-
-static int
-utf8decode(const char *s_in, long *u, int *err)
-{
-	static const unsigned char lens[] = {
-		/* 0XXXX */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-		/* 10XXX */ 0, 0, 0, 0, 0, 0, 0, 0,  /* invalid */
-		/* 110XX */ 2, 2, 2, 2,
-		/* 1110X */ 3, 3,
-		/* 11110 */ 4,
-		/* 11111 */ 0,  /* invalid */
-	};
-	static const unsigned char leading_mask[] = { 0x7F, 0x1F, 0x0F, 0x07 };
-	static const unsigned int overlong[] = { 0x0, 0x80, 0x0800, 0x10000 };
-
-	const unsigned char *s = (const unsigned char *)s_in;
-	int len = lens[*s >> 3];
-	*u = UTF_INVALID;
-	*err = 1;
-	if (len == 0)
-		return 1;
-
-	long cp = s[0] & leading_mask[len - 1];
-	for (int i = 1; i < len; ++i) {
-		if (s[i] == '\0' || (s[i] & 0xC0) != 0x80)
-			return i;
-		cp = (cp << 6) | (s[i] & 0x3F);
-	}
-	/* out of range, surrogate, overlong encoding */
-	if (cp > 0x10FFFF || (cp >> 11) == 0x1B || cp < overlong[len - 1])
-		return len;
-
-	*err = 0;
-	*u = cp;
-	return len;
-}
-
 Drw *
 drw_create(Display *dpy, int screen, Window root, unsigned int w, unsigned int h)
 {
@@ -83,7 +46,7 @@ drw_free(Drw *drw)
 {
 	XFreePixmap(drw->dpy, drw->drawable);
 	XFreeGC(drw->dpy, drw->gc);
-	drw_fontset_free(drw->fonts);
+	drw_font_free(drw->font);
 	free(drw);
 }
 
@@ -197,13 +160,6 @@ drw_scm_free(Drw *drw, Clr *scm, size_t clrcount)
 	for (i = 0; i < clrcount; i++)
 		drw_clr_free(drw, &scm[i]);
 	free(scm);
-}
-
-void
-drw_setfontset(Drw *drw, Fnt *set)
-{
-	if (drw)
-		drw->fonts = set;
 }
 
 void
