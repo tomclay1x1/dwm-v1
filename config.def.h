@@ -13,9 +13,9 @@ static const int smartgaps          = 0;        /* 1 means no outer gap when the
 static const int vertpad            = 7;       /* vertical padding of bar */
 static const int sidepad            = 7;       /* horizontal padding of bar */
 static const int user_bh            = 30;        /* 0 means that dwm will calculate bar height, >= 1 means dwm will user_bh as bar height */
-static const char font[] = "monospace 13";
+static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 13";
 
-static const char dmenufont[]       = "monospace:size=10";
+
 static const char col_gray1[]       = "#191818";
 static const char col_gray2[]       = "#444444";
 static const char col_gray3[]       = "#bbbbbb";
@@ -30,14 +30,16 @@ static const char *colors[][3]      = {
 /* tagging */
 static const char *tags[] = { "󱢰", "󱢬", "󱢨", "󱢤" };
 
+
+static char inner_separator          = ' ';
+static unsigned truncate_icons_after = 2; /* will default to 1, that is the min */
+static char truncate_symbol[]        = "...";
+
 static const Rule rules[] = {
-	/* xprop(1):
-	 *	WM_CLASS(STRING) = instance, class
-	 *	WM_NAME(STRING) = title
-	 */
-	/* class      instance    title       tags mask     isfloating   monitor */
-	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
-	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
+    /* class      instance    title       tags mask     isfloating   monitor   appicon */
+    { "Gimp",     NULL,       NULL,       0,            1,           -1,       NULL },
+    { "firefox",  NULL,       NULL,       0,            0,           -1,       "󰈹"  },
+    { "URxvt",    NULL,       NULL,       0,            0,           -1,       ""  }, 
 };
 
 /* layout(s) */
@@ -101,11 +103,6 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
 	TAGKEYS(                        XK_4,                      3)
-	TAGKEYS(                        XK_5,                      4)
-	TAGKEYS(                        XK_6,                      5)
-	TAGKEYS(                        XK_7,                      6)
-	TAGKEYS(                        XK_8,                      7)
-	TAGKEYS(                        XK_9,                      8)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 };
 

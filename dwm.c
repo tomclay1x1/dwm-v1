@@ -87,6 +87,7 @@ typedef struct Monitor Monitor;
 typedef struct Client Client;
 struct Client {
 	char name[256];
+        char *appicon;
 	float mina, maxa;
 	int x, y, w, h;
 	int oldx, oldy, oldw, oldh;
@@ -127,6 +128,7 @@ struct Monitor {
 	unsigned int seltags;
 	unsigned int sellt;
 	unsigned int tagset[2];
+        char **tag_icons;
 	int showbar;
 	int topbar;
 	Client *clients;
@@ -144,6 +146,7 @@ typedef struct {
 	unsigned int tags;
 	int isfloating;
 	int monitor;
+        const char *appicon;
 } Rule;
 
 /* function declarations */
@@ -239,6 +242,10 @@ static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
 
+
+
+static void applyappicon(char *tag_icons[], int *icons_per_tag, const Client *c);
+
 /* variables */
 static const char broken[] = "broken";
 static char stext[512];
@@ -292,7 +299,11 @@ applyrules(Client *c)
 	Monitor *m;
 	XClassHint ch = { NULL, NULL };
 
+
+	truncate_icons_after = truncate_icons_after > 0 ? truncate_icons_after : 1;
+
 	/* rule matching */
+	c->appicon = NULL;
 	c->isfloating = 0;
 	c->tags = 0;
 	XGetClassHint(dpy, c->win, &ch);
@@ -305,6 +316,7 @@ applyrules(Client *c)
 		&& (!r->class || strstr(class, r->class))
 		&& (!r->instance || strstr(instance, r->instance)))
 		{
+			c->appicon = (char*) r->appicon; /* THIS IS THE CRITICAL LINE */
 			c->isfloating = r->isfloating;
 			c->tags |= r->tags;
 			for (m = mons; m && m->num != r->monitor; m = m->next);
@@ -426,51 +438,67 @@ attachstack(Client *c)
 void
 buttonpress(XEvent *e)
 {
-    unsigned int i, x, click;
-    Arg arg = {0};
-    Client *c;
-    Monitor *m;
-    XButtonPressedEvent *ev = &e->xbutton;
+	unsigned int i, x, click;
+	Arg arg = {0};
+	Client *c;
+	Monitor *m;
+	XButtonPressedEvent *ev = &e->xbutton;
 
-    click = ClkRootWin;
-    /* focus monitor if necessary */
-    if ((m = wintomon(ev->window)) && m != selmon) {
-        unfocus(selmon->sel, 1);
-        selmon = m;
-        focus(NULL);
-    }
-    if (ev->window == selmon->barwin) {
-        /* --- ARCH ICON OFFSET ADDED HERE --- */
-        int archw = TEXTW(" ");
-        if (ev->x < archw)
-            return; 
-        
-        i = 0;
-        x = archw; 
-        /* ----------------------------------- */
-        
-        do
-            x += TEXTW(tags[i]);
-        while (ev->x >= x && ++i < LENGTH(tags));
-        if (i < LENGTH(tags)) {
-            click = ClkTagBar;
-            arg.ui = 1 << i;
-        } else if (ev->x < x + TEXTW(selmon->ltsymbol))
-            click = ClkLtSymbol;
-        else if (ev->x > selmon->ww - (int)TEXTWM(stext) + lrpad - 2)
-            click = ClkStatusText;
-        else
-            click = ClkWinTitle;
-    } else if ((c = wintoclient(ev->window))) {
-        focus(c);
-        restack(selmon);
-        XAllowEvents(dpy, ReplayPointer, CurrentTime);
-        click = ClkClientWin;
-    }
-    for (i = 0; i < LENGTH(buttons); i++)
-        if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
-        && CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-            buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+	click = ClkRootWin;
+	/* focus monitor if necessary */
+	if ((m = wintomon(ev->window)) && m != selmon) {
+		unfocus(selmon->sel, 1);
+		selmon = m;
+		focus(NULL);
+	}
+	if (ev->window == selmon->barwin) {
+		int tw = TEXTWM(stext); 
+		int lw = TEXTW(selmon->ltsymbol);
+		int layout_x = selmon->ww - tw - lw - 2 * sp;
+		int status_x = selmon->ww - tw - 2 * sp;
+
+		/* Calculate the centered tags position */
+		int tags_w = 0;
+		for (i = 0; i < LENGTH(tags); i++) {
+			tags_w += TEXTW(selmon->tag_icons[i]);
+		}
+		int middle_x = (selmon->ww - tags_w) / 2;
+
+		/* 1. Check if the click was in the Tags (Workspaces) area */
+		if (ev->x >= middle_x && ev->x < middle_x + tags_w) {
+			i = 0;
+			x = middle_x;
+			do {
+				x += TEXTW(selmon->tag_icons[i]);
+			} while (ev->x >= x && ++i < LENGTH(tags));
+			
+			if (i < LENGTH(tags)) {
+				click = ClkTagBar;
+				arg.ui = 1 << i;
+			}
+		} 
+		/* 2. Check if the click was on the Layout Symbol */
+		else if (ev->x >= layout_x && ev->x < layout_x + lw) {
+			click = ClkLtSymbol;
+		} 
+		/* 3. Check if the click was on the Status Text (Time) */
+		else if (ev->x >= status_x) {
+			click = ClkStatusText;
+		} 
+		/* 4. Clicked anywhere else (empty space) */
+		else {
+			click = ClkWinTitle;
+		}
+	} else if ((c = wintoclient(ev->window))) {
+		focus(c);
+		restack(selmon);
+		XAllowEvents(dpy, ReplayPointer, CurrentTime);
+		click = ClkClientWin;
+	}
+	for (i = 0; i < LENGTH(buttons); i++)
+		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
+		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
+			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
 }
 
 void
@@ -525,6 +553,11 @@ cleanupmon(Monitor *mon)
 	}
 	XUnmapWindow(dpy, mon->barwin);
 	XDestroyWindow(dpy, mon->barwin);
+        for (int i = 0; i < LENGTH(tags); i++) {
+            if (mon->tag_icons[i]) free(mon->tag_icons[i]);
+            mon->tag_icons[i] = NULL;
+        }
+        if (mon->tag_icons) free(mon->tag_icons);
 	free(mon);
 }
 
@@ -664,6 +697,11 @@ createmon(void)
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
+        m->tag_icons = (char**) malloc(LENGTH(tags) * sizeof(char*));
+        if (m->tag_icons == NULL) perror("dwm: malloc()");
+        for (int i = 0; i < LENGTH(tags); i++) {
+            m->tag_icons[i] = NULL;
+        }
 	return m;
 }
 
@@ -718,7 +756,7 @@ dirtomon(int dir)
 void
 drawbar(Monitor *m)
 {
-    int x, w, tw = 0;
+    int x, w, tw = 0, lw = 0, archw = 0;
     int boxs = drw->font->h / 9;
     int boxw = drw->font->h / 6 + 2;
     unsigned int i, occ = 0, urg = 0;
@@ -727,50 +765,78 @@ drawbar(Monitor *m)
     if (!m->showbar)
         return;
 
-    /* draw status first so it can be overdrawn by tags later */
+    /* 1. Draw Status (Time) on the Far Right */
     if (m == selmon) { /* status is only drawn on selected monitor */
         drw_setscheme(drw, scheme[SchemeNorm]);
         tw = TEXTWM(stext); 
         drw_text(drw, m->ww - tw - 2 * sp, 0, tw, bh, lrpad / 2, stext, 0, True); /* Patched */
     }
 
+    /* --- Appicons Patch Logic --- */
+    int icons_per_tag[LENGTH(tags)];
+    memset(icons_per_tag, 0, LENGTH(tags) * sizeof(int));
+
+    for (int i = 0; i < LENGTH(tags); i++) {
+        if (m->tag_icons[i]) free(m->tag_icons[i]);
+        m->tag_icons[i] = strndup(tags[i], strlen(tags[i])); /* Default tag value */
+    }
+
     for (c = m->clients; c; c = c->next) {
+        if (c->appicon && strlen(c->appicon) > 0) {
+            applyappicon(m->tag_icons, icons_per_tag, c);
+        }
         occ |= c->tags;
         if (c->isurgent)
             urg |= c->tags;
     }
-
-    /* --- Arch Icon --- */
-    int archw = TEXTW(" "); 
-    drw_setscheme(drw, scheme[SchemeNorm]);
-    x = drw_text(drw, 0, 0, archw, bh, lrpad / 2, " ", 0, False);
     /* ---------------------------- */
 
+    /* 2. Draw Layout Symbol on the Right (Left of Time) */
+    lw = TEXTW(m->ltsymbol);
+    drw_setscheme(drw, scheme[SchemeNorm]);
+    int layout_x = m->ww - tw - lw - 2 * sp; 
+    drw_text(drw, layout_x, 0, lw, bh, lrpad / 2, m->ltsymbol, 0, False);
+
+    /* 3. Draw Arch Icon on the Far Left */
+    archw = TEXTW(" "); 
+    drw_setscheme(drw, scheme[SchemeNorm]);
+    x = drw_text(drw, 0, 0, archw, bh, lrpad / 2, " ", 0, False);
+
+    /* 4. Calculate Widths for Centering Tags */
+    int tags_w = 0;
     for (i = 0; i < LENGTH(tags); i++) {
-        w = TEXTW(tags[i]);
+        tags_w += TEXTW(m->tag_icons[i]);
+    }
+    int middle_x = (m->ww - tags_w) / 2;
+
+    /* Fill space between Arch logo and centered tags */
+    drw_setscheme(drw, scheme[SchemeNorm]);
+    if (middle_x > x) {
+        drw_rect(drw, x, 0, middle_x - x, bh, 1, 1);
+    }
+
+    /* 5. Draw Tags (Workspaces) in the Middle */
+    x = middle_x;
+    for (i = 0; i < LENGTH(tags); i++) {
+        w = TEXTW(m->tag_icons[i]);
         drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
-        drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i, False);
-        if (occ & 1 << i)
+        drw_text(drw, x, 0, w, bh, lrpad / 2, m->tag_icons[i], urg & 1 << i, False);
+        if (occ & 1 << i && icons_per_tag[i] == 0)
             drw_rect(drw, x + boxs, boxs, boxw, boxw,
                 m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
                 urg & 1 << i);
         x += w;
     }
-    w = TEXTW(m->ltsymbol);
-    drw_setscheme(drw, scheme[SchemeNorm]);
-    x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0, False);
 
-    if ((w = m->ww - tw - x) > bh) {
-        if (m->sel) {
-            drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
-            drw_text(drw, x, 0, w - 2 * sp, bh, lrpad / 2, m->sel->name, 0, False); /* Patched */
-            if (m->sel->isfloating)
-                drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
-        } else {
-            drw_setscheme(drw, scheme[SchemeNorm]);
-            drw_rect(drw, x, 0, w - 2 * sp, bh, 1, 1); /* Patched */
-        }
+    /* 6. Fill space between tags and layout symbol */
+    /* Note: The window title (m->sel->name) is removed here to prevent overlapping 
+       with the centered workspaces when many tags/icons are open. */
+    if (layout_x > x) {
+        drw_setscheme(drw, scheme[SchemeNorm]);
+        drw_rect(drw, x, 0, layout_x - x, bh, 1, 1);
     }
+
+    /* 7. Map the bar */
     drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
 
@@ -2276,6 +2342,64 @@ zoom(const Arg *arg)
 	if (c == nexttiled(selmon->clients) && !(c = nexttiled(c->next)))
 		return;
 	pop(c);
+}
+
+void remove_outer_separators(char **str) {
+    size_t clean_tag_name_len = strlen(*str) - 2;
+    char *temp_tag_name = (char*) malloc(clean_tag_name_len + 1);
+    if (temp_tag_name == NULL) perror("dwm: malloc()");
+    memset(temp_tag_name, 0, clean_tag_name_len + 1);
+    char *clean_tag_name_beg = *str + 1;
+    strncpy(temp_tag_name, clean_tag_name_beg, clean_tag_name_len);
+    free(*str);
+    *str = temp_tag_name;
+}
+
+void appiconsappend(char **str, const char *appicon, size_t new_size) {
+    char *temp_tag_name = (char*) malloc(new_size);
+    if (temp_tag_name == NULL) perror("dwm: malloc()");
+    temp_tag_name = memset(temp_tag_name, 0, new_size);
+    strncpy(temp_tag_name + 1, *str, strlen(*str));
+    temp_tag_name[strlen(temp_tag_name)] = inner_separator;
+    strncpy(temp_tag_name + strlen(temp_tag_name), appicon, strlen(appicon));
+    free(*str);
+    *str = temp_tag_name;
+}
+
+void
+applyappicon(char *tag_icons[], int *icons_per_tag, const Client *c)
+{
+    for (unsigned t = 1, i = 0; i < LENGTH(tags); t <<= 1, i++) {
+        if (c->tags & t) {
+            char *icon = NULL;
+            
+            /* 1. Determine which icon to use */
+            if (icons_per_tag[i] < truncate_icons_after)
+                icon = c->appicon;
+            else if (icons_per_tag[i] == truncate_icons_after)
+                icon = truncate_symbol;
+            else {
+                icons_per_tag[i]++;
+                continue;
+            }
+
+            char buffer[256];
+            
+            /* 2. Format the string WITHOUT brackets/separators */
+            if (icons_per_tag[i] == 0) {
+                /* First app: "CardIcon AppIcon" (e.g. "󱢰 󰈹") */
+                snprintf(buffer, sizeof(buffer), "%s %s", tags[i], icon);
+            } else {
+                /* Additional apps: "CurrentString AppIcon" (e.g. "󱢰 󰈹 ") */
+                snprintf(buffer, sizeof(buffer), "%s %s", tag_icons[i], icon);
+            }
+
+            /* 3. Reallocate and save */
+            free(tag_icons[i]);
+            tag_icons[i] = strdup(buffer);
+            icons_per_tag[i]++;
+        }
+    }
 }
 
 int
