@@ -13,7 +13,7 @@ static const int smartgaps          = 0;        /* 1 means no outer gap when the
 static const int vertpad            = 7;       /* vertical padding of bar */
 static const int sidepad            = 7;       /* horizontal padding of bar */
 static const int user_bh            = 30;        /* 0 means that dwm will calculate bar height, >= 1 means dwm will user_bh as bar height */
-static const char font[] = "FreeMono, JetBrainsMono Nerd Font 13";
+static const char font[] = "monospace 13";
 
 static const char dmenufont[]       = "monospace:size=10";
 static const char col_gray1[]       = "#191818";
