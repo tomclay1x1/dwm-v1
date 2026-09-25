@@ -798,9 +798,9 @@ drawbar(Monitor *m)
     drw_text(drw, layout_x, 0, lw, bh, lrpad / 2, m->ltsymbol, 0, False);
 
     /* 3. Draw Arch Icon on the Far Left */
-    archw = TEXTW(" "); 
+    archw = TEXTW(" "); 
     drw_setscheme(drw, scheme[SchemeNorm]);
-    x = drw_text(drw, 0, 0, archw, bh, lrpad / 2, " ", 0, False);
+    x = drw_text(drw, 0, 0, archw, bh, lrpad / 2, " ", 0, False);
 
     /* 4. Calculate Widths for Centering Tags */
     int tags_w = 0;
