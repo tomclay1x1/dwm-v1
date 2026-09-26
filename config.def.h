@@ -51,9 +51,9 @@ static const int refreshrate = 120;  /* refresh rate (per second) for client mov
 
  static const Layout layouts[] = {
  	/* symbol     arrange function */
-	{ "",      bstackhoriz },
- 	{ "",      tile },    /* first entry is default */
-	{ "---",      horizgrid },
+	{ "󰕵",      bstackhoriz },
+ 	{ "󰕴",      tile },    /* first entry is default */
+	{ "󰕭",      horizgrid },
 	{ "",      NULL },    /* no layout function means floating behavior */
 	{ NULL,       NULL },
  };
