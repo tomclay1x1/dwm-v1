@@ -181,6 +181,9 @@ static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
 static long getstate(Window w);
+static long getstate(Window w);
+static pid_t getstatusbarpid(void);
+static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static int gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, int focused);
 static void grabkeys(void);
@@ -213,6 +216,9 @@ static void setmfact(const Arg *arg);
 static void setup(void);
 static void seturgent(Client *c, int urg);
 static void showhide(Client *c);
+static void spawn(const Arg *arg);
+static void showhide(Client *c);
+static void sigstatusbar(const Arg *arg);
 static void spawn(const Arg *arg);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
@@ -249,6 +255,9 @@ static void applyappicon(char *tag_icons[], int *icons_per_tag, const Client *c)
 /* variables */
 static const char broken[] = "broken";
 static char stext[512];
+static int statusw;
+static int statussig;
+static pid_t statuspid = -1;
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 static int bh;               /* bar height */
@@ -452,10 +461,9 @@ buttonpress(XEvent *e)
 		focus(NULL);
 	}
 	if (ev->window == selmon->barwin) {
-		int tw = TEXTWM(stext); 
 		int lw = TEXTW(selmon->ltsymbol);
-		int layout_x = selmon->ww - tw - lw - 2 * sp;
-		int status_x = selmon->ww - tw - 2 * sp;
+		int layout_x = selmon->ww - statusw - lw - 2 * sp;
+		int status_x = selmon->ww - statusw - 2 * sp;
 
 		/* Calculate the centered tags position */
 		int tags_w = 0;
@@ -477,14 +485,34 @@ buttonpress(XEvent *e)
 				arg.ui = 1 << i;
 			}
 		} 
+
 		/* 2. Check if the click was on the Layout Symbol */
 		else if (ev->x >= layout_x && ev->x < layout_x + lw) {
 			click = ClkLtSymbol;
 		} 
+
 		/* 3. Check if the click was on the Status Text (Time) */
 		else if (ev->x >= status_x) {
+			x = status_x;
 			click = ClkStatusText;
-		} 
+			statussig = 0;
+			for (char *text = stext, *s = stext, ch; *s && x <= ev->x; s++) {
+				if ((unsigned char)(*s) < ' ') {
+					ch = *s;
+					*s = '\0';
+					x += TEXTWM(text) - lrpad;
+					*s = ch;
+					text = s + 1;
+					if (x >= ev->x)
+						break;
+					if (statussig == ch)
+						statussig = 0;
+					else
+						statussig = ch;
+				}
+			}
+		}
+
 		/* 4. Clicked anywhere else (empty space) */
 		else {
 			click = ClkWinTitle;
@@ -765,11 +793,25 @@ drawbar(Monitor *m)
     if (!m->showbar)
         return;
 
-    /* 1. Draw Status (Time) on the Far Right */
+	/* 1. Draw Status (Time) on the Far Right */
     if (m == selmon) { /* status is only drawn on selected monitor */
+        char *text, *s, ch;
         drw_setscheme(drw, scheme[SchemeNorm]);
-        tw = TEXTWM(stext); 
-        drw_text(drw, m->ww - tw - 2 * sp, 0, tw, bh, lrpad / 2, stext, 0, True); /* Patched */
+        x = m->ww - statusw - 2 * sp;
+
+        for (text = s = stext; *s; s++) {
+            if ((unsigned char)(*s) < ' ') {
+                ch = *s;
+                *s = '\0';
+                tw = TEXTWM(text) - lrpad;
+                drw_text(drw, x, 0, tw, bh, lrpad / 2, text, 0, True); /* True ensures Pango parses it */
+                x += tw;
+                *s = ch;
+                text = s + 1;
+            }
+        }
+        tw = TEXTWM(text);
+        drw_text(drw, x, 0, tw, bh, lrpad / 2, text, 0, True);
     }
 
     /* --- Appicons Patch Logic --- */
@@ -1626,6 +1668,44 @@ setmfact(const Arg *arg)
 	arrange(selmon);
 }
 
+pid_t
+getstatusbarpid(void)
+{
+	char buf[32], *str = buf, *c;
+	FILE *fp;
+
+	if (statuspid > 0) {
+		snprintf(buf, sizeof(buf), "/proc/%u/cmdline", statuspid);
+		if ((fp = fopen(buf, "r"))) {
+			fgets(buf, sizeof(buf), fp);
+			while ((c = strchr(str, '/')))
+				str = c + 1;
+			fclose(fp);
+			if (!strcmp(str, STATUSBAR))
+				return statuspid;
+		}
+	}
+	if (!(fp = popen("pidof -s "STATUSBAR, "r")))
+		return -1;
+	fgets(buf, sizeof(buf), fp);
+	pclose(fp);
+	return strtol(buf, NULL, 10);
+}
+
+void
+sigstatusbar(const Arg *arg)
+{
+	union sigval sv;
+
+	if (!statussig)
+		return;
+	sv.sival_int = arg->i;
+	if ((statuspid = getstatusbarpid()) <= 0)
+		return;
+
+	sigqueue(statuspid, SIGRTMIN+statussig, sv);
+}
+
 void
 setup(void)
 {
@@ -2209,8 +2289,23 @@ updatesizehints(Client *c)
 void
 updatestatus(void)
 {
-	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
+	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext))) {
 		strcpy(stext, " ");
+		statusw = TEXTWM(stext);
+	} else {
+		char *text, *s, ch;
+		statusw = 0;
+		for (text = s = stext; *s; s++) {
+			if ((unsigned char)(*s) < ' ') {
+				ch = *s;
+				*s = '\0';
+				statusw += TEXTWM(text) - lrpad;
+				*s = ch;
+				text = s + 1;
+			}
+		}
+		statusw += TEXTWM(text);
+	}
 	drawbar(selmon);
 }
 
