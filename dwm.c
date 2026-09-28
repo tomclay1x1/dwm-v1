@@ -836,7 +836,7 @@ drawbar(Monitor *m)
     /* 2. Draw Layout Symbol on the Right (Left of Time) */
     lw = TEXTW(m->ltsymbol);
     drw_setscheme(drw, scheme[SchemeNorm]);
-    int layout_x = m->ww - tw - lw - 2 * sp; 
+    int layout_x = m->ww - statusw - lw - 2 * sp; 
     drw_text(drw, layout_x, 0, lw, bh, lrpad / 2, m->ltsymbol, 0, False);
 
     /* 3. Draw Arch Icon on the Far Left */
