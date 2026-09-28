@@ -13,13 +13,13 @@ static const int smartgaps          = 0;        /* 1 means no outer gap when the
 static const int vertpad            = 7;       /* vertical padding of bar */
 static const int sidepad            = 7;       /* horizontal padding of bar */
 static const int user_bh            = 30;        /* 0 means that dwm will calculate bar height, >= 1 means dwm will user_bh as bar height */
-static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 13";
+static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 14";
 
 
 static const char col_gray1[]        = "#2b2c2c"; // Deep abyssal ocean black/dark slate (Bar background)
 static const char col_gray2[]        = "#2e3b38"; // Moody dark sea-green/gray (Inactive borders)
 static const char col_gray3[]        = "#8fa39e"; // Muted stormy mist gray (Unselected tags/text)
-static const char col_gray4[]        = "#f0ebd8"; // Pale sunlit foam/parchment white (Selected text/tags)
+static const char col_gray4[]        = ""; // Pale sunlit foam/parchment white (Selected text/tags)
 static const char col_cyan[]         = "#567064"; // Deep atmospheric storm-green / aged copper (Active border/accent
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
