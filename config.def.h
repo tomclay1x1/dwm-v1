@@ -16,7 +16,7 @@ static const int user_bh            = 30;        /* 0 means that dwm will calcul
 static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 13";
 
 
-static const char col_gray1[]        = "#2d2d2d"; // Deep abyssal ocean black/dark slate (Bar background)
+static const char col_gray1[]        = "#6c706e"; // Deep abyssal ocean black/dark slate (Bar background)
 static const char col_gray2[]        = "#2e3b38"; // Moody dark sea-green/gray (Inactive borders)
 static const char col_gray3[]        = "#8fa39e"; // Muted stormy mist gray (Unselected tags/text)
 static const char col_gray4[]        = "#f0ebd8"; // Pale sunlit foam/parchment white (Selected text/tags)
