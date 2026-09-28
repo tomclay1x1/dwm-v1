@@ -16,11 +16,11 @@ static const int user_bh            = 30;        /* 0 means that dwm will calcul
 static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 13";
 
 
-static const char col_gray1[]       = "#191818";
-static const char col_gray2[]       = "#444444";
-static const char col_gray3[]       = "#bbbbbb";
-static const char col_gray4[]       = "#eeeeee";
-static const char col_cyan[]        = "#a7a7a7";
+static const char col_gray1[]        = "#141c1a"; // Deep abyssal ocean black/dark slate (Bar background)
+static const char col_gray2[]        = "#2e3b38"; // Moody dark sea-green/gray (Inactive borders)
+static const char col_gray3[]        = "#8fa39e"; // Muted stormy mist gray (Unselected tags/text)
+static const char col_gray4[]        = "#f0ebd8"; // Pale sunlit foam/parchment white (Selected text/tags)
+static const char col_cyan[]         = "#567064"; // Deep atmospheric storm-green / aged copper (Active border/accent
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
