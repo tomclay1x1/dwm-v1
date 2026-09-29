@@ -57,6 +57,7 @@
 #define TAGMASK                 ((1 << LENGTH(tags)) - 1)
 #define TEXTW(X)                (drw_font_getwidth(drw, (X), False) + lrpad)
 #define TEXTWM(X)               (drw_font_getwidth(drw, (X), True) + lrpad)
+#define SESSION_FILE             "/tmp/dwm-session"
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
@@ -1778,7 +1779,7 @@ setup(void)
 	while (waitpid(-1, NULL, WNOHANG) > 0);
 
 	signal(SIGHUP, sighup);
-	signal(SIGTERM, sigterm)
+	signal(SIGTERM, sigterm);
 
 	/* init screen */
 	screen = DefaultScreen(dpy);
