@@ -13,6 +13,9 @@ static const int smartgaps          = 0;        /* 1 means no outer gap when the
 static const int vertpad            = 7;       /* vertical padding of bar */
 static const int sidepad            = 7;       /* horizontal padding of bar */
 static const int user_bh            = 30;        /* 0 means that dwm will calculate bar height, >= 1 means dwm will user_bh as bar height */
+static const int attachbelow = 1;    /* 1 means attach after the currently active window */
+
+
 static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 13";
 
 
@@ -104,7 +107,7 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_3,                      2)
 	TAGKEYS(                        XK_4,                      3)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
-	{ MODKEY|ControlMask|ShiftMask, XK_q,      quit,           {1} }, 
+	{ MODKEY|ShiftMask,             XK_r,      quit,           {1} }, 
 };
 
 
