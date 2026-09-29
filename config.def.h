@@ -16,11 +16,11 @@ static const int user_bh            = 30;        /* 0 means that dwm will calcul
 static const char font[] = "FreeMono 13, JetBrainsMono Nerd Font 13";
 
 
-static const char col_gray1[]        = "#222323"; // Deep abyssal ocean black/dark slate (Bar background)
-static const char col_gray2[]        = "#2e3b38"; // Moody dark sea-green/gray (Inactive borders)
-static const char col_gray3[]        = "#8fa39e"; // Muted stormy mist gray (Unselected tags/text)
-static const char col_gray4[]        = "#f0ebd8"; // Pale sunlit foam/parchment white (Selected text/tags)
-static const char col_cyan[]         = "#567064"; // Deep atmospheric storm-green / aged copper (Active border/accent
+static const char col_gray1[]        = "#222323"; 
+static const char col_gray2[]        = "#2e3b38"; 
+static const char col_gray3[]        = "#8fa39e"; 
+static const char col_gray4[]        = "#f0ebd8"; 
+static const char col_cyan[]         = "#567064"; 
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
@@ -43,11 +43,11 @@ static const Rule rules[] = {
 };
 
 /* layout(s) */
-static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
-static const int nmaster     = 1;    /* number of clients in master area */
-static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
-static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-static const int refreshrate = 120;  /* refresh rate (per second) for client move/resize */
+static const float mfact     = 0.55; 
+static const int nmaster     = 1;   
+static const int resizehints = 1;   
+static const int lockfullscreen = 1; 
+static const int refreshrate = 75;  
 
  static const Layout layouts[] = {
  	/* symbol     arrange function */

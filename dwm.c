@@ -205,6 +205,8 @@ static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void restack(Monitor *m);
 static void run(void);
+static void sighup(int unused);
+static void sigterm(int unused);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
@@ -253,6 +255,7 @@ static void zoom(const Arg *arg);
 static void applyappicon(char *tag_icons[], int *icons_per_tag, const Client *c);
 
 /* variables */
+static int restart = 0;
 static const char broken[] = "broken";
 static char stext[512];
 static int statusw;
@@ -1378,6 +1381,7 @@ propertynotify(XEvent *e)
 void
 quit(const Arg *arg)
 {
+	if(arg->i) restart = 1;
 	running = 0;
 }
 
