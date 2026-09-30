@@ -2,9 +2,9 @@
 
 # 🌊 DWM — Dynamic Window Manager (v1)
 
-<img src="https://img.shields.io/badge/Arch-Linux-1793d1?style=for-the-badge&logo=arch-linux&logoColor=white" alt="Arch Linux">
-<img src="https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white" alt="C">
-<img src="https://img.shields.io/badge/Status-Rice%20In%20Progress-green?style=for-the-badge" alt="Status">
+![Arch Linux](https://img.shields.io/badge/Arch-Linux-1793d1?style=for-the-badge&logo=arch-linux&logoColor=white)
+![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Rice%20In%20Progress-green?style=for-the-badge)
 
 *A heavily customized, minimal, storm-inspired maritime desktop environment built on Arch Linux.*
 
