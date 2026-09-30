@@ -30,5 +30,16 @@
 ## 🛠️ Ecosystem & Tooling
 
 * **Window Manager:** `dwm` (X11)
-* **Status Bar:** `dwmblocks` 
-* **Application Launcher:** `dmenu` 
+* **Status Bar:** `dwmblocks` (powered by custom bash utility scripts with Pango markup)
+* **Application Launcher:** `dmenu` (custom-themed with storm-green maritime palettes)
+
+---
+
+## 📥 Installation & Compilation
+
+Clone the repository and build from source:
+
+```bash
+git clone [https://github.com/yourusername/dwm-v1.git](https://github.com/yourusername/dwm-v1.git)
+cd dwm-v1
+sudo make clean install
